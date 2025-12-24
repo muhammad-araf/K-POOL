@@ -17,22 +17,26 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 const RideMap = ({ rides, height = "400px" }) => {
     // Default center (can be adjusted or dynamic)
-    const defaultCenter = [51.505, -0.09];
+    const defaultCenter = [31.5204, 74.3587]; // Lahore Coordinates (Example default)
 
     return (
-        <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200">
-            <MapContainer center={defaultCenter} zoom={13} style={{ height: height, width: "100%" }}>
+        <div className="w-full h-full bg-gray-100">
+            <MapContainer center={defaultCenter} zoom={12} style={{ height: height, width: "100%" }}>
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                 />
                 {rides && rides.map((ride, idx) => (
                     // Only show marker if ride has coordinates
                     (ride.startLat && ride.startLng) && (
                         <Marker key={idx} position={[ride.startLat, ride.startLng]}>
                             <Popup>
-                                <b>{ride.origin}</b> to <b>{ride.destination}</b><br />
-                                Price: Rs. {ride.pricePerSeat}
+                                <div className="text-sm">
+                                    <div className="font-bold text-gray-900">{ride.origin}</div>
+                                    <div className="text-gray-500 text-xs">to</div>
+                                    <div className="font-bold text-gray-900">{ride.destination}</div>
+                                    <div className="mt-1 font-bold text-green-600">Rs. {ride.pricePerSeat}</div>
+                                </div>
                             </Popup>
                         </Marker>
                     )

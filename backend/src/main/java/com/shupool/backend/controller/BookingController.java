@@ -11,6 +11,7 @@ import com.shupool.backend.security.jwt.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -75,7 +76,7 @@ public class BookingController {
         String email = jwtUtils.getUserNameFromJwtToken(jwt);
         User passenger = userRepository.findByEmail(email).orElseThrow();
         
-        return bookingRepository.findByPassengerId(passenger.getId());
+        return bookingRepository.findByPassenger(passenger);
     }
 
     @PostMapping("/cancel/{bookingId}")
@@ -106,5 +107,42 @@ public class BookingController {
         bookingRepository.save(booking);
         
         return ResponseEntity.ok("Booking cancelled successfully");
+    }
+
+    @GetMapping("/ride/{rideId}")
+    @PreAuthorize("hasAuthority('DRIVER') or hasAuthority('ADMIN')")
+    public ResponseEntity<?> getBookingsForRide(@PathVariable String rideId, @RequestHeader("Authorization") String token) {
+        String jwt = token.substring(7);
+        String email = jwtUtils.getUserNameFromJwtToken(jwt);
+        User driver = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+
+        Ride ride = rideRepository.findById(rideId).orElseThrow(() -> new RuntimeException("Ride not found"));
+
+        if (!ride.getDriver().getId().equals(driver.getId())) {
+             return ResponseEntity.badRequest().body("Not authorized to view bookings for this ride");
+        }
+
+        List<Booking> bookings = bookingRepository.findByRide(ride);
+        return ResponseEntity.ok(bookings);
+    }
+
+    @GetMapping("/details/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> getBookingById(@PathVariable String id, @RequestHeader("Authorization") String token) {
+        String jwt = token.substring(7);
+        String email = jwtUtils.getUserNameFromJwtToken(jwt);
+        User passenger = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+
+        Booking booking = bookingRepository.findById(id).orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        // Allow if user is the passenger OR the driver of the ride
+        boolean isPassenger = booking.getPassenger().getId().equals(passenger.getId());
+        boolean isDriver = booking.getRide().getDriver().getId().equals(passenger.getId());
+
+        if (!isPassenger && !isDriver) {
+             return ResponseEntity.badRequest().body("Not authorized to view this booking");
+        }
+
+        return ResponseEntity.ok(booking);
     }
 }

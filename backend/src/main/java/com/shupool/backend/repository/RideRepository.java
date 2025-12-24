@@ -17,5 +17,5 @@ public interface RideRepository extends MongoRepository<Ride, String> {
             String origin, String destination, RideStatus status);
             
     // Find rides by driver
-    List<Ride> findByDriverId(String driverId);
+    List<Ride> findByDriver(com.shupool.backend.model.User driver);
 }

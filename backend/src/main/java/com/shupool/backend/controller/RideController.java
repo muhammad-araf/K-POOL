@@ -39,8 +39,14 @@ public class RideController {
                 origin, destination, RideStatus.OPEN);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getRideById(@PathVariable String id) {
+        Ride ride = rideRepository.findById(id).orElseThrow(() -> new RuntimeException("Ride not found"));
+        return ResponseEntity.ok(ride);
+    }
+
     @PostMapping("/offer")
-    @PreAuthorize("hasRole('DRIVER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('DRIVER') or hasAuthority('ADMIN')")
     public ResponseEntity<?> offerRide(@RequestHeader("Authorization") String token, @RequestBody Ride rideRequest) {
         // Extract user from token
         String jwt = token.substring(7);
@@ -66,8 +72,18 @@ public class RideController {
         return ResponseEntity.ok("Ride offered successfully!");
     }
 
+    @GetMapping("/my-rides")
+    @PreAuthorize("hasAuthority('DRIVER') or hasAuthority('ADMIN')")
+    public List<Ride> getMyOfferedRides(@RequestHeader("Authorization") String token) {
+        String jwt = token.substring(7);
+        String email = jwtUtils.getUserNameFromJwtToken(jwt);
+        User driver = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        
+        return rideRepository.findByDriver(driver);
+    }
+
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('DRIVER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('DRIVER') or hasAuthority('ADMIN')")
     public ResponseEntity<?> updateRideStatus(@PathVariable String id, @RequestParam RideStatus status, @RequestHeader("Authorization") String token) {
         String jwt = token.substring(7);
         String email = jwtUtils.getUserNameFromJwtToken(jwt);

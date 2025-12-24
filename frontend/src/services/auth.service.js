@@ -1,13 +1,11 @@
-import axios from 'axios';
-
-const API_URL = '/api/auth/';
+import api from './api';
 
 const register = (data) => {
-    return axios.post(API_URL + 'signup', data);
+    return api.post('/auth/signup', data);
 };
 
 const login = (email, password) => {
-    return axios.post(API_URL + 'signin', {
+    return api.post('/auth/signin', {
         email,
         password,
     })
@@ -21,10 +19,17 @@ const login = (email, password) => {
 
 const logout = () => {
     localStorage.removeItem('user');
+    window.location.reload();
 };
 
 const getCurrentUser = () => {
-    return JSON.parse(localStorage.getItem('user'));
+    try {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) return null;
+        return JSON.parse(userStr);
+    } catch (error) {
+        return null;
+    }
 };
 
 const AuthService = {

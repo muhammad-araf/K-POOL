@@ -1,54 +1,62 @@
-import axios from 'axios';
-import AuthService from './auth.service';
-
-const API_URL = '/api/';
-
-// Helper to get header
-const authHeader = () => {
-    const user = AuthService.getCurrentUser();
-    if (user && user.token) {
-        return { Authorization: 'Bearer ' + user.token };
-    } else {
-        return {};
-    }
-};
+import api from './api';
 
 const getOpenRides = () => {
-    return axios.get(API_URL + 'rides', { headers: authHeader() });
+    return api.get('rides');
 };
 
 const searchRides = (origin, destination) => {
-    return axios.get(API_URL + `rides/search?origin=${origin}&destination=${destination}`, { headers: authHeader() });
+    return api.get(`rides/search?origin=${origin}&destination=${destination}`);
 };
 
 const offerRide = (rideData) => {
-    return axios.post(API_URL + 'rides/offer', rideData, { headers: authHeader() });
+    return api.post('rides/offer', rideData);
 };
 
 const bookRide = (rideId, seats) => {
-    return axios.post(API_URL + `bookings/book/${rideId}?seats=${seats}`, {}, { headers: authHeader() });
+    return api.post(`bookings/book/${rideId}?seats=${seats}`);
 };
 
 const getMyBookings = () => {
-    return axios.get(API_URL + 'bookings/my-bookings', { headers: authHeader() });
+    return api.get('bookings/my-bookings');
 };
 
 const updateRideStatus = (rideId, status) => {
-    return axios.put(API_URL + `rides/${rideId}/status?status=${status}`, {}, { headers: authHeader() });
+    return api.put(`rides/${rideId}/status?status=${status}`);
 };
 
 const cancelBooking = (bookingId) => {
-    return axios.post(API_URL + `bookings/cancel/${bookingId}`, {}, { headers: authHeader() });
+    return api.post(`bookings/cancel/${bookingId}`);
+};
+
+const getRideBookings = (rideId) => {
+    return api.get(`bookings/ride/${rideId}`);
+};
+
+const getBookingById = (bookingId) => {
+    return api.get(`bookings/details/${bookingId}`);
+};
+
+const getRide = (rideId) => {
+    return api.get(`rides/${rideId}`);
+};
+
+const getMyOfferedRides = () => {
+    return api.get('rides/my-rides');
 };
 
 const RideService = {
     getOpenRides,
     searchRides,
     offerRide,
+    getMyOfferedRides,
     bookRide,
     getMyBookings,
     updateRideStatus,
-    cancelBooking
+    cancelBooking,
+    getRideBookings,
+    getRideBookings,
+    getBookingById,
+    getRide
 };
 
 export default RideService;

@@ -1,30 +1,26 @@
 import { useState, useEffect } from 'react';
-import UserService from '../services/user.service';
-import AuthService from '../services/auth.service';
+import { useUser, useUpdateUser } from '../hooks/useUser';
 import { toast } from 'react-toastify';
+import { User, Mail, Phone, Car, Star, Shield, PenSquare, Save, X, Camera, Calendar } from 'lucide-react';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import Badge from '../components/ui/Badge';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Profile = () => {
-    const [user, setUser] = useState({});
+    const { data: user, isLoading: loading } = useUser();
+    const updateUserMutation = useUpdateUser();
+
     const [isEditing, setIsEditing] = useState(false);
+    const [activeTab, setActiveTab] = useState('personal'); // personal, vehicle
     const [formData, setFormData] = useState({});
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        loadProfile();
-    }, []);
-
-    const loadProfile = async () => {
-        try {
-            const res = await UserService.getProfile();
-            setUser(res.data);
-            setFormData(res.data);
-        } catch (e) {
-            console.error("Failed to load profile", e);
-            toast.error("Could not load profile data.");
-        } finally {
-            setLoading(false);
+        if (user) {
+            setFormData(user);
         }
-    };
+    }, [user]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,267 +28,268 @@ const Profile = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            await UserService.updateProfile(formData);
-            toast.success("Profile Updated Successfully!");
-            setIsEditing(false);
-            loadProfile();
-
-            // Sync local storage for consistency
-            const currentUser = AuthService.getCurrentUser();
-            if (currentUser) {
-                currentUser.fullName = formData.fullName;
-                localStorage.setItem("user", JSON.stringify(currentUser));
+        updateUserMutation.mutate(formData, {
+            onSuccess: () => {
+                setIsEditing(false);
             }
-        } catch (e) {
-            toast.error("Failed to update profile.");
-        }
+        });
     };
+
+    const isDriver = user?.roles && user.roles.some(r => r.name === 'ROLE_DRIVER' || r === 'ROLE_DRIVER');
 
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-[50vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
             </div>
         );
     }
 
-    const isDriver = user.roles && user.roles.some(r => r.name === 'ROLE_DRIVER' || r === 'ROLE_DRIVER');
 
     return (
-        <div className="min-h-screen bg-gray-50/50 -mx-4 sm:-mx-8 lg:-mx-12 -mt-8 pb-12">
+        <div className="min-h-screen bg-dark-50/50 -mx-4 sm:-mx-8 lg:-mx-12 -mt-8 pb-12">
 
-            {/* 1. Decorative Cover Background */}
-            <div className="h-64 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 relative overflow-hidden">
-                <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px]"></div>
-                <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-                <div className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            {/* 1. Header Banner */}
+            <div className="h-64 bg-gradient-to-r from-primary-600 to-primary-800 relative overflow-hidden">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-dark-50/50 to-transparent"></div>
             </div>
 
-            {/* 2. Main Container with Negative Margin to pull content up */}
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative -mt-24">
 
-                {/* Profile Header Card */}
-                <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 sm:p-8 mb-8 relative z-10">
-                    <div className="flex flex-col md:flex-row items-start md:items-end gap-6">
-
-                        {/* Avatar Wrapper */}
-                        <div className="relative -mt-16 md:-mt-20 flex-shrink-0 mx-auto md:mx-0">
-                            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white bg-gray-100 shadow-2xl overflow-hidden flex items-center justify-center relative z-20">
+                {/* 2. Profile Summary Card */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl border border-white/40 p-6 sm:p-8 mb-8"
+                >
+                    <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
+                        {/* Avatar */}
+                        <div className="relative -mt-20 md:-mt-24 flex-shrink-0">
+                            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-dark-100 flex items-center justify-center">
                                 {user.profilePicUrl ? (
                                     <img src={user.profilePicUrl} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="text-4xl md:text-5xl font-bold text-gray-300">
+                                    <span className="text-4xl md:text-5xl font-bold text-dark-300">
                                         {user.fullName?.[0]?.toUpperCase()}
                                     </span>
                                 )}
                             </div>
-                            <button
-                                onClick={() => setIsEditing(!isEditing)}
-                                className="absolute bottom-1 right-1 md:bottom-2 md:right-2 bg-indigo-600 text-white p-2.5 rounded-full shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all duration-200 z-30"
-                                title="Edit Profile"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* User Info - Flows naturally next to avatar */}
-                        <div className="flex-1 text-center md:text-left w-full md:w-auto mt-2 md:mt-0 md:mb-2">
-                            <div className="flex flex-col md:flex-row md:items-center gap-2 justify-center md:justify-start">
-                                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{user.fullName}</h1>
-                                {isDriver && (
-                                    <span className="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-bold border border-indigo-100 uppercase tracking-wide">
-                                        Active Driver
-                                    </span>
-                                )}
-                            </div>
-                            <p className="text-gray-500 font-medium">{user.email}</p>
-                        </div>
-
-                        {/* Right Stats (Desktop) */}
-                        <div className="hidden md:flex items-center gap-6 mb-2">
-                            <div className="text-center px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100">
-                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Rating</p>
-                                <div className="flex items-center justify-center gap-1.5 text-lg font-bold text-gray-900">
-                                    <span className="text-yellow-400">★</span>
-                                    {user.averageRating ? user.averageRating.toFixed(1) : 'New'}
-                                </div>
-                            </div>
-                            <div className="text-center px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100">
-                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Status</p>
-                                <p className={`text-lg font-bold ${user.verified ? 'text-green-600' : 'text-gray-400'}`}>
-                                    {user.verified ? 'Verified' : 'Unverified'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                    {/* Left Column: Stats Cards (Mobile) & Additional Info */}
-                    <div className="space-y-6">
-                        {/* Mobile Stats (Visible only on mobile) */}
-                        <div className="grid grid-cols-2 gap-4 md:hidden">
-                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-center">
-                                <p className="text-xs text-gray-400 font-bold uppercase">Rating</p>
-                                <p className="text-lg font-bold text-gray-800 mt-1 flex items-center justify-center gap-1">
-                                    <span className="text-yellow-400">★</span> {user.averageRating ? user.averageRating.toFixed(1) : 'New'}
-                                </p>
-                            </div>
-                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-center">
-                                <p className="text-xs text-gray-400 font-bold uppercase">Verified</p>
-                                <p className={`text-lg font-bold mt-1 ${user.verified ? 'text-green-600' : 'text-gray-400'}`}>
-                                    {user.verified ? 'Yes' : 'No'}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* About Card */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                About Me
-                            </h3>
-                            {isEditing ? (
-                                <textarea
-                                    name="bio"
-                                    value={formData.bio || ''}
-                                    onChange={handleChange}
-                                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none resize-none text-sm"
-                                    rows="4"
-                                    placeholder="Tell others about yourself..."
-                                />
-                            ) : (
-                                <p className="text-gray-600 leading-relaxed text-sm whitespace-pre-line">
-                                    {user.bio || "No bio added yet. Tell people about yourself!"}
-                                </p>
+                            {isEditing && (
+                                <button className="absolute bottom-2 right-2 p-2 bg-dark-800 text-white rounded-full shadow-lg hover:bg-black transition-colors">
+                                    <Camera className="w-4 h-4" />
+                                </button>
                             )}
                         </div>
 
-                        {/* Driver Card */}
-                        {isDriver && (
-                            <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-2xl shadow-lg p-6 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4 opacity-10">
-                                    <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7.25h10.29l1.04 3.01H5.81l1.04-3.01zM17 14H7v-2h10v2z" />
-                                    </svg>
+                        {/* Info */}
+                        <div className="flex-1 text-center md:text-left space-y-2">
+                            <div className="flex flex-col md:flex-row items-center gap-3 justify-center md:justify-start">
+                                <h1 className="text-3xl font-bold text-dark-900">{user.fullName}</h1>
+                                {isDriver ? (
+                                    <Badge variant="primary" className="uppercase tracking-wider text-xs">Driver</Badge>
+                                ) : (
+                                    <Badge variant="default" className="bg-gray-200 text-gray-700 uppercase tracking-wider text-xs">Passenger</Badge>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-4 text-dark-500 justify-center md:justify-start text-sm">
+                                <span className="flex items-center gap-1"><Mail className="w-4 h-4" /> {user.email}</span>
+                                {user.phone && <span className="flex items-center gap-1"><Phone className="w-4 h-4" /> {user.phone}</span>}
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-4">
+                            {!isEditing ? (
+                                <Button onClick={() => setIsEditing(true)} icon={PenSquare} variant="outline">
+                                    Edit Profile
+                                </Button>
+                            ) : (
+                                <div className="flex gap-2">
+                                    <Button onClick={() => { setIsEditing(false); setFormData(user); }} variant="ghost" disabled={loading}>
+                                        Cancel
+                                    </Button>
+                                    <Button onClick={handleSubmit} icon={Save} isLoading={updateUserMutation.isPending}>
+                                        Save Changes
+                                    </Button>
                                 </div>
-                                <h3 className="font-bold text-white/90 mb-4 relative z-10 flex items-center gap-2">
-                                    <span>Vehicle Details</span>
-                                </h3>
-                                <div className="space-y-3 relative z-10">
-                                    <div>
-                                        <p className="text-xs text-gray-400 uppercase tracking-wider">Vehicle Model</p>
-                                        {isEditing ? (
-                                            <input name="vehicleModel" value={formData.vehicleModel || ''} onChange={handleChange} className="w-full mt-1 bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-400 outline-none text-sm" placeholder="e.g. Honda Civic" />
-                                        ) : (
-                                            <p className="font-medium text-lg">{user.vehicleModel || 'Not specified'}</p>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-400 uppercase tracking-wider">License Plate</p>
-                                        {isEditing ? (
-                                            <input name="vehicleNumber" value={formData.vehicleNumber || ''} onChange={handleChange} className="w-full mt-1 bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-400 outline-none text-sm" placeholder="ABC-123" />
-                                        ) : (
-                                            <p className="font-mono text-indigo-300">{user.vehicleNumber || 'Not set'}</p>
-                                        )}
-                                    </div>
+                            )}
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* 3. Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                    {/* Left Sidebar */}
+                    <div className="space-y-6">
+                        <Card className="p-0 overflow-hidden">
+                            <div className="p-6 text-center border-b border-gray-100">
+                                <div className="text-xs text-dark-400 font-bold uppercase tracking-wider mb-2">My Rating</div>
+                                <div className="flex items-center justify-center gap-2 text-3xl font-bold text-dark-900">
+                                    <span className="text-yellow-400 text-4xl">★</span>
+                                    {user.averageRating ? user.averageRating.toFixed(1) : 'N/A'}
+                                </div>
+                                <div className="text-sm text-dark-400 mt-1">Based on recent rides</div>
+                            </div>
+                            <div className="p-6 text-center bg-gray-50/50">
+                                <div className="text-xs text-dark-400 font-bold uppercase tracking-wider mb-2">Account Status</div>
+                                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${user.verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                    {user.verified ? <Shield className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                                    {user.verified ? 'Verified Account' : 'Unverified'}
                                 </div>
                             </div>
-                        )}
+                        </Card>
+
+                        {/* Tab Navigation (Desktop Sidebar style) */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <button
+                                onClick={() => setActiveTab('personal')}
+                                className={`w-full flex items-center gap-3 px-6 py-4 text-left transition-colors ${activeTab === 'personal' ? 'bg-primary-50 text-primary-700 font-bold border-l-4 border-primary-500' : 'text-dark-600 hover:bg-gray-50'}`}
+                            >
+                                <User className="w-5 h-5" /> Personal Information
+                            </button>
+                            {isDriver && (
+                                <button
+                                    onClick={() => setActiveTab('vehicle')}
+                                    className={`w-full flex items-center gap-3 px-6 py-4 text-left transition-colors ${activeTab === 'vehicle' ? 'bg-primary-50 text-primary-700 font-bold border-l-4 border-primary-500' : 'text-dark-600 hover:bg-gray-50'}`}
+                                >
+                                    <Car className="w-5 h-5" /> Vehicle Details
+                                </button>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Right Column: Main Editing / Details */}
+                    {/* Right Content Area */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="font-bold text-xl text-gray-900">Personal Information</h3>
-                                {isEditing && <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg animate-pulse">EDITING MODE</span>}
-                            </div>
-
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Full Name</label>
-                                        {isEditing ? (
-                                            <input
-                                                name="fullName"
-                                                value={formData.fullName || ''}
-                                                onChange={handleChange}
-                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                                            />
-                                        ) : (
-                                            <div className="px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 text-gray-700 font-medium">
-                                                {user.fullName}
+                        <AnimatePresence mode="wait">
+                            {activeTab === 'personal' && (
+                                <motion.div
+                                    key="personal"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <Card>
+                                        <div className="flex items-center mb-6">
+                                            <div className="p-3 rounded-full bg-primary-100 text-primary-600 mr-4">
+                                                <User className="w-6 h-6" />
                                             </div>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Phone Number</label>
-                                        {isEditing ? (
-                                            <input
-                                                name="phone"
-                                                value={formData.phone || ''}
-                                                onChange={handleChange}
-                                                placeholder="+92 300 1234567"
-                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                                            />
-                                        ) : (
-                                            <div className="px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 text-gray-700 font-medium flex items-center gap-2">
-                                                <span className="opacity-50">📱</span> {user.phone || 'Not provided'}
+                                            <div>
+                                                <h2 className="text-xl font-bold text-dark-900">Personal Information</h2>
+                                                <p className="text-sm text-dark-500">Manage your private information.</p>
                                             </div>
-                                        )}
-                                    </div>
-
-                                    <div className="md:col-span-2 space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700">Email Address</label>
-                                        <div className="px-4 py-3 bg-gray-100 rounded-xl border border-gray-200 text-gray-500 font-medium flex items-center gap-2 cursor-not-allowed">
-                                            <span className="opacity-50">✉️</span> {user.email}
-                                            <span className="ml-auto text-xs bg-gray-200 px-2 py-0.5 rounded text-gray-500">Read-only</span>
                                         </div>
-                                    </div>
 
-                                    {isEditing && (
-                                        <div className="md:col-span-2 space-y-2">
-                                            <label className="text-sm font-semibold text-gray-700">Profile Picture URL</label>
-                                            <input
-                                                name="profilePicUrl"
-                                                value={formData.profilePicUrl || ''}
+                                        <form className="space-y-6">
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <Input
+                                                    label="Full Name"
+                                                    name="fullName"
+                                                    value={isEditing ? formData.fullName : user.fullName}
+                                                    onChange={handleChange}
+                                                    readOnly={!isEditing}
+                                                    icon={User}
+                                                />
+                                                <Input
+                                                    label="Phone Number"
+                                                    name="phone"
+                                                    value={isEditing ? formData.phone : (user.phone || 'Not provided')}
+                                                    onChange={handleChange}
+                                                    readOnly={!isEditing}
+                                                    icon={Phone}
+                                                />
+                                                <div className="md:col-span-2">
+                                                    <Input
+                                                        label="Email Address"
+                                                        value={user.email}
+                                                        readOnly={true}
+                                                        icon={Mail}
+                                                        disabled
+                                                        className="bg-gray-100 text-gray-500 cursor-not-allowed"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-sm font-medium text-dark-700 mb-1">Bio</label>
+                                                    {isEditing ? (
+                                                        <textarea
+                                                            name="bio"
+                                                            value={formData.bio || ''}
+                                                            onChange={handleChange}
+                                                            rows="4"
+                                                            className="input-field w-full p-3 h-32 resize-none"
+                                                            placeholder="Tell us about yourself..."
+                                                        />
+                                                    ) : (
+                                                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 text-dark-600 text-sm leading-relaxed">
+                                                            {user.bio || "No bio added yet."}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {isEditing && (
+                                                    <div className="md:col-span-2">
+                                                        <Input
+                                                            label="Profile Picture URL"
+                                                            name="profilePicUrl"
+                                                            value={formData.profilePicUrl || ''}
+                                                            onChange={handleChange}
+                                                            placeholder="https://..."
+                                                            icon={Camera}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </form>
+                                    </Card>
+                                </motion.div>
+                            )}
+
+                            {activeTab === 'vehicle' && isDriver && (
+                                <motion.div
+                                    key="vehicle"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <Card>
+                                        <div className="flex items-center mb-6">
+                                            <div className="p-3 rounded-full bg-primary-100 text-primary-600 mr-4">
+                                                <Car className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-dark-900">Vehicle Details</h2>
+                                                <p className="text-sm text-dark-500">Manage your vehicle information for rides.</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <Input
+                                                label="Vehicle Model"
+                                                name="vehicleModel"
+                                                placeholder="e.g. Honda Civic"
+                                                value={isEditing ? formData.vehicleModel : (user.vehicleModel || 'Not specified')}
                                                 onChange={handleChange}
-                                                placeholder="https://..."
-                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none font-mono text-sm"
+                                                readOnly={!isEditing}
+                                                icon={Car}
                                             />
-                                            <p className="text-xs text-gray-400">Paste a direct link to a hosted image.</p>
+                                            <Input
+                                                label="License Plate"
+                                                name="vehicleNumber"
+                                                placeholder="ABC-123"
+                                                value={isEditing ? formData.vehicleNumber : (user.vehicleNumber || 'Not set')}
+                                                onChange={handleChange}
+                                                readOnly={!isEditing}
+                                                icon={Shield}
+                                            />
+                                            {/* Add more vehicle fields here if backend supports (Color, Year, etc.) */}
                                         </div>
-                                    )}
-                                </div>
-
-                                {isEditing && (
-                                    <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                                        <button
-                                            type="button"
-                                            onClick={() => { setIsEditing(false); setFormData(user); }}
-                                            className="px-6 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            className="px-6 py-2.5 rounded-xl font-medium text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:scale-105"
-                                        >
-                                            Save Changes
-                                        </button>
-                                    </div>
-                                )}
-                            </form>
-                        </div>
+                                    </Card>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
             </div>

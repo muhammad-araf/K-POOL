@@ -1,14 +1,20 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import axios from 'axios';
+import Card from '../components/ui/Card';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
         try {
             // Stub endpoint call
             await axios.post('/api/auth/forgot-password', { email });
@@ -16,48 +22,61 @@ const ForgotPassword = () => {
             toast.success('Reset link sent to your email!');
         } catch (error) {
             toast.error('Failed to process request.');
+        } finally {
+            setLoading(false);
         }
     };
 
     if (submitted) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="card max-w-md text-center">
-                    <h2 className="text-2xl font-bold text-green-600 mb-4">Check your Email</h2>
-                    <p className="text-gray-600 mb-6">We have sent a password reset link to <b>{email}</b>.</p>
-                    <Link to="/login" className="btn-primary">Back to Login</Link>
-                </div>
+                <Card className="max-w-md text-center p-8 border-green-100 bg-green-50/50">
+                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <CheckCircle className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-dark-900 mb-2">Check your Email</h2>
+                    <p className="text-dark-500 mb-8">We have sent a password reset link to <b className="text-dark-900">{email}</b>.</p>
+                    <Link to="/login">
+                        <Button className="w-full" icon={ArrowLeft}>Back to Login</Button>
+                    </Link>
+                </Card>
             </div>
         );
     }
 
     return (
         <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="card w-full max-w-md">
-                <h2 className="text-2xl font-bold text-center text-primary mb-2">Forgot Password?</h2>
-                <p className="text-center text-gray-500 mb-6">Enter your email to reset your password.</p>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                        <input
-                            type="email"
-                            className="input-field"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
+            <Card className="w-full max-w-md p-8">
+                <div className="text-center mb-8">
+                    <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Mail className="w-6 h-6" />
                     </div>
+                    <h2 className="text-2xl font-bold text-dark-900 mb-2">Forgot Password?</h2>
+                    <p className="text-dark-500">Enter your email to reset your password.</p>
+                </div>
 
-                    <button type="submit" className="btn-primary w-full py-3">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <Input
+                        label="Email Address"
+                        type="email"
+                        icon={Mail}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@example.com"
+                        required
+                    />
+
+                    <Button type="submit" className="w-full" isLoading={loading}>
                         Send Reset Link
-                    </button>
+                    </Button>
                 </form>
 
-                <p className="mt-4 text-center text-sm text-gray-600">
-                    <Link to="/login" className="text-primary font-semibold hover:underline">Back to Login</Link>
+                <p className="mt-6 text-center text-sm text-dark-500">
+                    <Link to="/login" className="font-semibold text-primary-600 hover:text-primary-700 hover:underline flex items-center justify-center gap-2">
+                        <ArrowLeft className="w-4 h-4" /> Back to Login
+                    </Link>
                 </p>
-            </div>
+            </Card>
         </div>
     );
 };

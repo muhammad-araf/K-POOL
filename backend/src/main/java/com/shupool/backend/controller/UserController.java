@@ -42,8 +42,8 @@ public class UserController {
         if (updateRequest.getVehicleModel() != null) user.setVehicleModel(updateRequest.getVehicleModel());
         if (updateRequest.getVehicleNumber() != null) user.setVehicleNumber(updateRequest.getVehicleNumber());
 
-        userRepository.save(user);
-        return ResponseEntity.ok(new MessageResponse("Profile updated successfully"));
+        User updatedUser = userRepository.save(user);
+        return ResponseEntity.ok(updatedUser);
     }
     
     @GetMapping("/{id}")
